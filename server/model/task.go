@@ -45,6 +45,7 @@ type Task struct {
 	TaskBefore             *string    `gorm:"type:text" json:"task_before"`
 	TaskAfter              *string    `gorm:"type:text" json:"task_after"`
 	AllowMultipleInstances bool       `json:"allow_multiple_instances"`
+	StopSchedule           string     `gorm:"type:text;default:''" json:"stop_schedule"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
 }
@@ -87,6 +88,7 @@ func (t *Task) ToDict() map[string]interface{} {
 		"task_before":              t.TaskBefore,
 		"task_after":               t.TaskAfter,
 		"allow_multiple_instances": t.AllowMultipleInstances,
+		"stop_schedule":            t.StopSchedule,
 		"created_at":               t.CreatedAt,
 		"updated_at":               t.UpdatedAt,
 	}

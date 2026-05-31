@@ -6,6 +6,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -94,13 +95,13 @@ func compactGINLogLine(line string) (string, bool) {
 	}
 
 	statusCode := strings.TrimSpace(match[1])
-	latency := normalizeGINLatency(match[2])
 	clientIP := strings.TrimSpace(match[3])
 	method := strings.TrimSpace(match[4])
 	path := strings.TrimSpace(match[5])
 	level := logLevelForStatusCode(statusCode)
 
-	return "[" + strings.ToUpper(level) + "] " + method + " " + path + " -> " + statusCode + " " + latency + " @" + clientIP, true
+	ts := time.Now().Format("2006-01-02 15:04:05")
+	return "[" + strings.ToUpper(level) + "] " + ts + " [" + clientIP + "] " + method + " " + path + " 状态=" + statusCode, true
 }
 
 func normalizeGINLatency(raw string) string {
@@ -134,11 +135,13 @@ func detectPanelLogLevel(line string) string {
 	}
 }
 
-func NewGINLoggerWriter() io.Writer {
-	return &ginAccessLogWriter{}
+func NewGINLoggerWriter(dst io.Writer) io.Writer {
+	return &ginAccessLogWriter{dst: dst}
 }
 
-type ginAccessLogWriter struct{}
+type ginAccessLogWriter struct {
+	dst io.Writer
+}
 
 func (w *ginAccessLogWriter) Write(p []byte) (int, error) {
 	text := strings.TrimSpace(string(p))
@@ -147,11 +150,11 @@ func (w *ginAccessLogWriter) Write(p []byte) (int, error) {
 	}
 
 	if compacted, ok := compactGINLogLine(text); ok {
-		log.Print(compacted)
+		w.dst.Write([]byte(compacted + "\n"))
 		return len(p), nil
 	}
 
-	log.Print(strings.TrimRight(text, "\r\n"))
+	w.dst.Write([]byte(strings.TrimRight(text, "\r\n") + "\n"))
 	return len(p), nil
 }
 
